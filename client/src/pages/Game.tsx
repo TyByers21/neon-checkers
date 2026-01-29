@@ -81,13 +81,23 @@ export default function Game() {
         </div>
 
         <div className="text-right pointer-events-auto">
-          <div className="flex items-center justify-end gap-4 mb-2">
-            <div>
-              <h2 className="text-secondary text-lg leading-none">CORTEX</h2>
-              <span className="text-xs text-muted-foreground tracking-widest uppercase">{difficulty} AI</span>
-            </div>
-            <div className="h-10 w-10 border-2 border-secondary bg-secondary/10 rounded-full flex items-center justify-center text-secondary font-bold">
-              AI
+          <div className="flex flex-col items-end gap-2 mb-2">
+            <CyberButton 
+              onClick={handleExit} 
+              variant="secondary" 
+              size="sm"
+              className="mb-2 opacity-50 hover:opacity-100 transition-opacity"
+            >
+              <LogOut className="w-3 h-3 mr-2" /> QUIT MISSION
+            </CyberButton>
+            <div className="flex items-center justify-end gap-4">
+              <div>
+                <h2 className="text-secondary text-lg leading-none">CORTEX</h2>
+                <span className="text-xs text-muted-foreground tracking-widest uppercase">{difficulty} AI</span>
+              </div>
+              <div className="h-10 w-10 border-2 border-secondary bg-secondary/10 rounded-full flex items-center justify-center text-secondary font-bold">
+                AI
+              </div>
             </div>
           </div>
           <div className="flex gap-1 justify-end">
