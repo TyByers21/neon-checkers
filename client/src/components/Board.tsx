@@ -31,17 +31,26 @@ function Piece({
   onClick: () => void;
 }) {
   const meshRef = useRef<THREE.Group>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
   const targetPos = useMemo(() => [
     (c - (BOARD_SIZE - 1) / 2) * TILE_SIZE,
     PIECE_HEIGHT / 2,
     (r - (BOARD_SIZE - 1) / 2) * TILE_SIZE
   ], [r, c]);
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     if (meshRef.current) {
+      // Micro-animation: Smooth movement with lerp
       meshRef.current.position.lerp(new THREE.Vector3(...targetPos), 0.1);
-      if (isSelected) {
-        meshRef.current.position.y = PIECE_HEIGHT / 2 + Math.sin(state.clock.elapsedTime * 5) * 0.1 + 0.1;
+      
+      // Idle animation: Subtle hovering/floating
+      const hover = Math.sin(state.clock.elapsedTime * 2) * 0.03;
+      meshRef.current.position.y = (PIECE_HEIGHT / 2) + hover + (isSelected ? 0.2 : 0);
+
+      // Electrical current idle animation: Pulsing emissive intensity
+      if (glowRef.current) {
+        const pulse = (Math.sin(state.clock.elapsedTime * 10) + 1) / 2;
+        (glowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.4 + pulse * 0.6;
       }
     }
   });
@@ -62,9 +71,9 @@ function Piece({
         />
       </mesh>
       
-      {/* Glow Ring */}
-      <mesh position={[0, PIECE_HEIGHT / 2 + 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[PIECE_RADIUS * 0.7, PIECE_RADIUS * 0.8, 32]} />
+      {/* Electrical Glow Ring (Idle Animation Target) */}
+      <mesh ref={glowRef} position={[0, PIECE_HEIGHT / 2 + 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[PIECE_RADIUS * 0.7, PIECE_RADIUS * 0.85, 32]} />
         <meshBasicMaterial color={glowColor} transparent opacity={0.8} />
       </mesh>
 
