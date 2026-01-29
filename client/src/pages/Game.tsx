@@ -85,7 +85,6 @@ export default function Game() {
             <CyberButton 
               onClick={handleExit} 
               variant="secondary" 
-              size="sm"
               className="mb-2 opacity-50 hover:opacity-100 transition-opacity"
             >
               <LogOut className="w-3 h-3 mr-2" /> QUIT MISSION
