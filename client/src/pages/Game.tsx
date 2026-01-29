@@ -53,6 +53,7 @@ export default function Game() {
   };
 
   return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-background">
       {/* HUD Header */}
       <header className="fixed top-0 left-0 right-0 p-4 md:p-6 flex flex-col items-center z-30 pointer-events-none">
         {/* Top Right Abort Button */}
@@ -114,15 +115,6 @@ export default function Game() {
       </header>
 
       <div className="flex flex-row items-center justify-center w-full max-w-7xl gap-8 px-4 z-10 pt-24">
-        {/* ... existing code for panels and board ... */}
-        {/* Replacing only the middle part to keep the refactored panels if they exist */}
-      </div>
-
-      {/* Fixed Bottom Controls - REMOVED ABORT FROM HERE */}
-      <footer className="fixed bottom-6 left-0 right-0 flex justify-center z-30 pointer-events-none">
-      </footer>
-
-      <div className="flex flex-row items-center justify-center w-full max-w-7xl gap-8 px-4 z-10">
         {/* Left Score Side Panel */}
         <aside className="hidden xl:flex flex-col gap-4 w-48 glass-panel p-4 border-l-2 border-l-primary/40">
           <div className="text-xs font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
