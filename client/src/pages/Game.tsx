@@ -14,7 +14,7 @@ export default function Game() {
   const difficulty = (localStorage.getItem("difficulty") as "easy" | "medium" | "hard") || "medium";
   
   const { gameState, selectPiece, makeMove, resetGame } = useGameEngine(difficulty);
-  const { mutate: saveGame, isPending: isSaving } = useCreateGame();
+  const { mutate: saveGame } = useCreateGame();
   const [hasSaved, setHasSaved] = useState(false);
 
   // Victory Effect
@@ -157,12 +157,6 @@ export default function Game() {
                     <LogOut className="w-4 h-4" /> ABORT MISSION
                   </span>
                 </CyberButton>
-
-                {isSaving && (
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground animate-pulse mt-2">
-                    <Loader2 className="w-3 h-3 animate-spin" /> UPLOADING DATA...
-                  </div>
-                )}
               </div>
             </motion.div>
           </div>

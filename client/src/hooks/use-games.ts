@@ -1,40 +1,34 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type InsertGame } from "@shared/routes";
 
+const STORAGE_KEY = "cyber_checkers_history";
+
 export function useGames() {
-  return useQuery({
-    queryKey: [api.games.list.path],
-    queryFn: async () => {
-      const res = await fetch(api.games.list.path);
-      if (!res.ok) throw new Error("Failed to fetch games history");
-      return api.games.list.responses[200].parse(await res.json());
-    },
-  });
+  const gamesJson = localStorage.getItem(STORAGE_KEY);
+  const games = gamesJson ? JSON.parse(gamesJson) : [];
+  
+  return {
+    data: games,
+    isLoading: false,
+    isError: false,
+    refetch: () => {}
+  };
 }
 
 export function useCreateGame() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (gameData: InsertGame) => {
+  return {
+    mutate: (gameData: InsertGame) => {
       const validated = api.games.create.input.parse(gameData);
-      const res = await fetch(api.games.create.path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
-      });
+      const gamesJson = localStorage.getItem(STORAGE_KEY);
+      const games = gamesJson ? JSON.parse(gamesJson) : [];
       
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = api.games.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
-        }
-        throw new Error("Failed to save game record");
-      }
+      const newGame = {
+        ...validated,
+        id: Date.now(),
+        createdAt: new Date().toISOString()
+      };
       
-      return api.games.create.responses[201].parse(await res.json());
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([newGame, ...games]));
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.games.list.path] });
-    },
-  });
+    isPending: false
+  };
 }

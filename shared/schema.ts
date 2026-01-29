@@ -5,8 +5,8 @@ import { z } from "zod";
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
   playerName: text("player_name").notNull(),
-  playerColor: text("player_color").notNull(), // 'cyan' or 'magenta'
-  winner: text("winner"), // 'player', 'ai', 'draw'
+  playerColor: text("player_color").notNull(),
+  winner: text("winner"),
   difficulty: text("difficulty").default("medium"),
   moves: integer("moves").notNull(),
   createdAt: timestamp("created_at").defaultNow(),

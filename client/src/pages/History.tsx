@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 
 export default function History() {
-  const { data: games, isLoading, isError } = useGames();
+  const { data: games } = useGames();
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-5xl mx-auto">
@@ -18,17 +18,7 @@ export default function History() {
         <h1 className="text-3xl font-bold neon-text">MISSION LOGS</h1>
       </header>
 
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center h-64 gap-4 text-primary">
-          <Loader2 className="w-12 h-12 animate-spin" />
-          <p className="font-mono uppercase animate-pulse">Decrypting Archives...</p>
-        </div>
-      ) : isError ? (
-        <div className="text-center text-destructive border border-destructive/50 p-8 bg-destructive/5 rounded-lg">
-          <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
-          <p>ERROR: DATABASE CORRUPTION. UNABLE TO RETRIEVE LOGS.</p>
-        </div>
-      ) : games?.length === 0 ? (
+      {games?.length === 0 ? (
         <div className="text-center text-muted-foreground p-12 glass-panel">
           <p>NO MISSIONS ON RECORD.</p>
           <Link href="/game" className="mt-4 inline-block text-primary hover:underline">
@@ -37,7 +27,7 @@ export default function History() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {games?.map((game, i) => (
+          {games?.map((game: any, i: number) => (
             <motion.div
               key={game.id}
               initial={{ opacity: 0, x: -20 }}
