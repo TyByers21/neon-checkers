@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, Text, Float } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, Text, Float, Trail } from "@react-three/drei";
 import * as THREE from "three";
 import { BoardState, Move, Position, GameState } from "@/hooks/use-game-engine";
 
@@ -32,26 +32,39 @@ function Piece({
 }) {
   const meshRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Mesh>(null);
+  const currentPos = useRef(new THREE.Vector3());
+  const velocity = useRef(new THREE.Vector3());
+  
   const targetPos = useMemo(() => [
     (c - (BOARD_SIZE - 1) / 2) * TILE_SIZE,
     PIECE_HEIGHT / 2,
     (r - (BOARD_SIZE - 1) / 2) * TILE_SIZE
   ], [r, c]);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (meshRef.current) {
-      // Micro-animation: Smooth movement with lerp
-      meshRef.current.position.lerp(new THREE.Vector3(...targetPos), 0.1);
+      // Smooth movement using spring-like physics instead of simple lerp
+      const targetVec = new THREE.Vector3(...targetPos);
+      const force = new THREE.Vector3().subVectors(targetVec, currentPos.current).multiplyScalar(15);
+      velocity.current.add(force.multiplyScalar(delta)).multiplyScalar(0.85);
+      currentPos.current.add(velocity.current.clone().multiplyScalar(delta));
+      
+      meshRef.current.position.copy(currentPos.current);
       
       // Idle animation: Subtle hovering/floating
-      const hover = Math.sin(state.clock.elapsedTime * 2) * 0.03;
-      meshRef.current.position.y = (PIECE_HEIGHT / 2) + hover + (isSelected ? 0.2 : 0);
+      const hover = Math.sin(state.clock.elapsedTime * 2) * 0.05;
+      meshRef.current.position.y += hover + (isSelected ? 0.3 : 0);
 
-      // Electrical current idle animation: Pulsing emissive intensity
+      // Electrical current idle animation: Pulsing emissive and visual arcs
       if (glowRef.current) {
-        const pulse = (Math.sin(state.clock.elapsedTime * 10) + 1) / 2;
-        (glowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.4 + pulse * 0.6;
+        const pulse = (Math.sin(state.clock.elapsedTime * 15) + 1) / 2;
+        const arc = (Math.sin(state.clock.elapsedTime * 40) + 1) / 2 * 0.3; // High frequency arc flicker
+        (glowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.3 + pulse * 0.5 + arc;
+        glowRef.current.scale.setScalar(1 + arc * 0.2);
       }
+      
+      // Rotate slowly for extra dynamism
+      meshRef.current.rotation.y += delta * 0.5;
     }
   });
 
@@ -59,35 +72,51 @@ function Piece({
 
   return (
     <group ref={meshRef} onClick={(e) => { e.stopPropagation(); onClick(); }}>
-      {/* Base Piece */}
-      <mesh castShadow receiveShadow position={[0, 0, 0]}>
+      {/* Piece Body */}
+      <mesh castShadow receiveShadow>
         <cylinderGeometry args={[PIECE_RADIUS, PIECE_RADIUS, PIECE_HEIGHT, 32]} />
         <meshStandardMaterial 
           color={color === "cyan" ? "#0066cc" : "#660066"} 
           emissive={glowColor}
-          emissiveIntensity={isSelected ? 1 : 0.2}
-          roughness={0.2}
-          metalness={0.8}
+          emissiveIntensity={isSelected ? 1.5 : 0.3}
+          roughness={0.1}
+          metalness={0.9}
         />
       </mesh>
       
-      {/* Electrical Glow Ring (Idle Animation Target) */}
+      {/* Movement Trail */}
+      <Trail
+        width={1.5}
+        length={4}
+        color={glowColor}
+        attenuation={(t) => t * t}
+      >
+        <mesh visible={false}>
+          <sphereGeometry args={[0.1]} />
+        </mesh>
+      </Trail>
+
+      {/* Electrical Current Arcs (Outer Ring) */}
       <mesh ref={glowRef} position={[0, PIECE_HEIGHT / 2 + 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[PIECE_RADIUS * 0.7, PIECE_RADIUS * 0.85, 32]} />
-        <meshBasicMaterial color={glowColor} transparent opacity={0.8} />
+        <ringGeometry args={[PIECE_RADIUS * 0.7, PIECE_RADIUS * 0.9, 32]} />
+        <meshBasicMaterial color={glowColor} transparent opacity={0.6} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Internal Electrical Core */}
+      <mesh position={[0, 0, 0]}>
+        <cylinderGeometry args={[PIECE_RADIUS * 0.5, PIECE_RADIUS * 0.5, PIECE_HEIGHT * 1.1, 16]} />
+        <meshBasicMaterial color={glowColor} transparent opacity={0.1} />
       </mesh>
 
       {/* King Symbol */}
       {isKing && (
-        <group position={[0, PIECE_HEIGHT / 2 + 0.02, 0]}>
-           <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[PIECE_RADIUS * 0.4, PIECE_RADIUS * 0.5, 32]} />
-            <meshBasicMaterial color="#ffcc00" />
-          </mesh>
-          <mesh position={[0, 0.1, 0]}>
-            <cylinderGeometry args={[PIECE_RADIUS * 0.4, PIECE_RADIUS * 0.5, 0.05, 32]} />
-            <meshStandardMaterial color="#ffcc00" emissive="#ffcc00" emissiveIntensity={0.5} />
-          </mesh>
+        <group position={[0, PIECE_HEIGHT / 2 + 0.05, 0]}>
+          <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[PIECE_RADIUS * 0.45, 0.03, 16, 32]} />
+              <meshStandardMaterial color="#ffcc00" emissive="#ffcc00" emissiveIntensity={2} />
+            </mesh>
+          </Float>
         </group>
       )}
     </group>
