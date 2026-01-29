@@ -53,86 +53,150 @@ export default function Game() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-background">
       {/* HUD Header */}
-      <header className="fixed top-0 left-0 right-0 p-4 md:p-6 flex justify-between items-start z-20 pointer-events-none">
-        <div className="pointer-events-auto">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="h-10 w-10 border-2 border-primary bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">
+      <header className="fixed top-0 left-0 right-0 p-4 md:p-6 flex justify-between items-start z-30 pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 border-2 border-primary bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)]">
               P1
             </div>
             <div>
-              <h2 className="text-primary text-lg leading-none">{playerName}</h2>
-              <span className="text-xs text-muted-foreground tracking-widest">OPERATIVE</span>
+              <h2 className="text-primary text-lg leading-none font-orbitron">{playerName}</h2>
+              <span className="text-[10px] text-muted-foreground tracking-widest uppercase">Operative</span>
             </div>
           </div>
-          <div className="flex gap-1">
-            {Array.from({ length: gameState.cyanCaptures }).map((_, i) => (
-              <div key={i} className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_5px_#ff00ff]" />
-            ))}
+          <div className="hidden lg:flex flex-col gap-1 border-l border-primary/20 pl-4">
+            <div className="text-[10px] text-primary/60 uppercase tracking-tighter mb-1">Captured Units</div>
+            <div className="flex flex-wrap gap-1 max-w-[120px]">
+              {Array.from({ length: gameState.cyanCaptures }).map((_, i) => (
+                <div key={i} className="w-2.5 h-2.5 rounded-full bg-secondary shadow-[0_0_8px_#ff00ff]" />
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="text-center hidden md:block">
-          <div className="text-4xl font-black neon-text tracking-widest font-display">
+          <div className="text-4xl font-black neon-text tracking-widest font-orbitron">
             {gameState.movesCount.toString().padStart(3, '0')}
           </div>
-          <div className="text-xs text-muted-foreground uppercase tracking-[0.5em]">Moves</div>
+          <div className="text-[10px] text-muted-foreground uppercase tracking-[0.5em]">Moves Logged</div>
         </div>
 
-        <div className="text-right pointer-events-auto">
-          <div className="flex flex-col items-end gap-2 mb-2">
+        <div className="text-right pointer-events-auto flex items-center gap-6">
+          <div className="hidden lg:flex flex-col gap-1 border-r border-secondary/20 pr-4 items-end">
+            <div className="text-[10px] text-secondary/60 uppercase tracking-tighter mb-1">Captured Units</div>
+            <div className="flex flex-wrap gap-1 max-w-[120px] justify-end">
+              {Array.from({ length: gameState.magentaCaptures }).map((_, i) => (
+                <div key={i} className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_8px_#00f3ff]" />
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
             <CyberButton 
               onClick={handleExit} 
               variant="secondary" 
               className="mb-2 opacity-50 hover:opacity-100 transition-opacity"
             >
-              <LogOut className="w-3 h-3 mr-2" /> QUIT MISSION
+              <LogOut className="w-3 h-3 mr-2" /> ABORT
             </CyberButton>
             <div className="flex items-center justify-end gap-4">
               <div>
-                <h2 className="text-secondary text-lg leading-none">CORTEX</h2>
-                <span className="text-xs text-muted-foreground tracking-widest uppercase">{difficulty} AI</span>
+                <h2 className="text-secondary text-lg leading-none font-orbitron">CORTEX</h2>
+                <span className="text-[10px] text-muted-foreground tracking-widest uppercase">{difficulty} AI</span>
               </div>
-              <div className="h-10 w-10 border-2 border-secondary bg-secondary/10 rounded-full flex items-center justify-center text-secondary font-bold">
+              <div className="h-10 w-10 border-2 border-secondary bg-secondary/10 rounded-full flex items-center justify-center text-secondary font-bold shadow-[0_0_15px_rgba(255,0,255,0.3)]">
                 AI
               </div>
             </div>
           </div>
-          <div className="flex gap-1 justify-end">
-            {Array.from({ length: gameState.magentaCaptures }).map((_, i) => (
-              <div key={i} className="w-2 h-2 rounded-full bg-primary shadow-[0_0_5px_#00f3ff]" />
-            ))}
-          </div>
         </div>
       </header>
 
-      {/* Main Board Area */}
-      <main className="relative z-10 w-full max-w-6xl px-4 mt-8 md:mt-0 flex-1 flex flex-col justify-center">
-        <Board 
-          gameState={gameState} 
-          onSelect={selectPiece} 
-          onMove={makeMove}
-        />
-        
-        {/* Turn Indicator (Mobile Friendly) */}
-        <div className="mt-8 flex justify-center items-center gap-4">
-          <div className={`px-6 py-2 rounded-full border transition-all duration-300 font-mono text-sm uppercase tracking-widest ${
-            gameState.turn === "player" 
-              ? "bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(0,243,255,0.4)]" 
-              : "border-transparent text-muted-foreground opacity-50"
-          }`}>
-            Your Turn
+      <div className="flex flex-row items-center justify-center w-full max-w-7xl gap-8 px-4 z-10">
+        {/* Left Score Side Panel */}
+        <aside className="hidden xl:flex flex-col gap-4 w-48 glass-panel p-4 border-l-2 border-l-primary/40">
+          <div className="text-xs font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            Unit Status
           </div>
-          <div className={`px-6 py-2 rounded-full border transition-all duration-300 font-mono text-sm uppercase tracking-widest ${
-            gameState.turn === "ai" 
-              ? "bg-secondary/20 border-secondary text-secondary shadow-[0_0_20px_rgba(255,0,255,0.4)]" 
-              : "border-transparent text-muted-foreground opacity-50"
-          }`}>
-            AI Thinking...
+          <div className="space-y-4">
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded">
+              <div className="text-[10px] text-muted-foreground uppercase mb-1">Friendly Score</div>
+              <div className="text-2xl font-black text-primary font-orbitron">{gameState.cyanCaptures}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-[10px] text-muted-foreground uppercase">Captured Manifest</div>
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: gameState.cyanCaptures }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-full bg-secondary/40 border border-secondary/60 shadow-[0_0_5px_#ff00ff]" />
+                ))}
+                {Array.from({ length: 12 - gameState.cyanCaptures }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-full border border-white/5 bg-white/5" />
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </main>
+        </aside>
+
+        {/* Main Board Area */}
+        <main className="flex-1 flex flex-col justify-center max-w-5xl">
+          <Board 
+            gameState={gameState} 
+            onSelect={selectPiece} 
+            onMove={makeMove}
+          />
+          
+          {/* Turn Indicator (Mobile Friendly) */}
+          <div className="mt-8 flex justify-center items-center gap-4">
+            <div className={`px-6 py-2 rounded-full border transition-all duration-300 font-mono text-sm uppercase tracking-widest ${
+              gameState.turn === "player" 
+                ? "bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(0,243,255,0.4)]" 
+                : "border-transparent text-muted-foreground opacity-50"
+            }`}>
+              Player Active
+            </div>
+            <div className={`px-6 py-2 rounded-full border transition-all duration-300 font-mono text-sm uppercase tracking-widest ${
+              gameState.turn === "ai" 
+                ? "bg-secondary/20 border-secondary text-secondary shadow-[0_0_20px_rgba(255,0,255,0.4)]" 
+                : "border-transparent text-muted-foreground opacity-50"
+            }`}>
+              AI Processing
+            </div>
+          </div>
+        </main>
+
+        {/* Right Score Side Panel */}
+        <aside className="hidden xl:flex flex-col gap-4 w-48 glass-panel p-4 border-r-2 border-r-secondary/40">
+          <div className="text-xs font-bold text-secondary uppercase tracking-widest mb-2 flex items-center gap-2 justify-end">
+            Hostile Intel
+            <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+          </div>
+          <div className="space-y-4">
+            <div className="p-3 bg-secondary/5 border border-secondary/20 rounded text-right">
+              <div className="text-[10px] text-muted-foreground uppercase mb-1">Cortex Score</div>
+              <div className="text-2xl font-black text-secondary font-orbitron">{gameState.magentaCaptures}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-[10px] text-muted-foreground uppercase text-right">Captured Manifest</div>
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: gameState.magentaCaptures }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-full bg-primary/40 border border-primary/60 shadow-[0_0_5px_#00f3ff]" />
+                ))}
+                {Array.from({ length: 12 - gameState.magentaCaptures }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-full border border-white/5 bg-white/5" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
+        <div className="absolute top-[10%] left-[5%] w-64 h-64 bg-primary/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[5%] w-64 h-64 bg-secondary/10 rounded-full blur-[120px]" />
+      </div>
 
       {/* Game Over Modal */}
       <AnimatePresence>
