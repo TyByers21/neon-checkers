@@ -15,6 +15,62 @@ const BOARD_SIZE = 8;
 const PIECE_RADIUS = 0.35;
 const PIECE_HEIGHT = 0.15;
 
+function ArcEffect({ color, index }: { color: string; index: number }) {
+  const lineRef = useRef<THREE.LineSegments>(null);
+  
+  const points = useMemo(() => {
+    const pts = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(angle) * PIECE_RADIUS * 0.8, 0, Math.sin(angle) * PIECE_RADIUS * 0.8));
+    }
+    return pts;
+  }, []);
+
+  useFrame((state) => {
+    if (lineRef.current) {
+      const time = state.clock.elapsedTime * 10 + index * 100;
+      const positions = lineRef.current.geometry.attributes.position.array as Float32Array;
+      
+      for (let i = 0; i < points.length; i++) {
+        const nextIdx = (i + 1) % points.length;
+        const p1 = points[i];
+        const p2 = points[nextIdx];
+        
+        // Add random jitter to simulate electrical arcs
+        const jitter = Math.sin(time + i) * 0.1;
+        const midX = (p1.x + p2.x) / 2 + (Math.random() - 0.5) * 0.15;
+        const midY = (Math.random() - 0.5) * 0.2;
+        const midZ = (p1.z + p2.z) / 2 + (Math.random() - 0.5) * 0.15;
+
+        const idx = i * 6;
+        positions[idx] = p1.x;
+        positions[idx + 1] = p1.y;
+        positions[idx + 2] = p1.z;
+        positions[idx + 3] = midX;
+        positions[idx + 4] = midY;
+        positions[idx + 5] = midZ;
+      }
+      lineRef.current.geometry.attributes.position.needsUpdate = true;
+      (lineRef.current.material as THREE.LineBasicMaterial).opacity = (Math.sin(time * 2) + 1) / 2 * 0.8;
+    }
+  });
+
+  return (
+    <lineSegments ref={lineRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={48}
+          array={new Float32Array(48 * 3)}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <lineBasicMaterial color={color} transparent opacity={0.8} linewidth={2} />
+    </lineSegments>
+  );
+}
+
 function Piece({ 
   r, 
   c, 
@@ -129,6 +185,13 @@ function Piece({
         <ringGeometry args={[PIECE_RADIUS * 0.7, PIECE_RADIUS * 0.9, 32]} />
         <meshBasicMaterial color={glowColor} transparent opacity={0.6} side={THREE.DoubleSide} />
       </mesh>
+
+      {/* Visible Electrical Currents (Dynamic Arcs) */}
+      <group position={[0, PIECE_HEIGHT / 2 + 0.05, 0]}>
+        {[0, 1, 2].map((i) => (
+          <ArcEffect key={i} color={glowColor} index={i} />
+        ))}
+      </group>
 
       {/* Internal Electrical Core */}
       <mesh position={[0, 0, 0]}>
