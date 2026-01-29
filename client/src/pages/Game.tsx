@@ -55,60 +55,71 @@ export default function Game() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-background">
       {/* HUD Header */}
-      <header className="fixed top-0 left-0 right-0 p-4 md:p-6 flex justify-between items-center z-30 pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-6">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 border-2 border-primary bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)]">
-              P1
-            </div>
-            <div>
-              <h2 className="text-primary text-lg leading-none font-orbitron">{playerName}</h2>
-              <div className="flex gap-1 mt-1">
-                {Array.from({ length: gameState.cyanCaptures }).map((_, i) => (
-                  <div key={i} className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_#ff00ff]" />
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="hidden sm:block text-2xl font-black text-primary font-orbitron ml-2">
-            SCORE: {gameState.cyanCaptures}
-          </div>
-        </div>
-
-        <div className="text-center pointer-events-none">
+      <header className="fixed top-0 left-0 right-0 p-4 md:p-6 flex flex-col items-center z-30 pointer-events-none">
+        <div className="text-center mb-4 pointer-events-none">
           <h1 className="text-xl md:text-3xl font-black neon-text tracking-widest font-orbitron opacity-80">
             NEO<span className="text-white">CHECKERS</span>
           </h1>
         </div>
 
-        <div className="text-right pointer-events-auto flex items-center gap-6">
-          <div className="hidden sm:block text-2xl font-black text-secondary font-orbitron mr-2">
-            SCORE: {gameState.magentaCaptures}
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center justify-end gap-4">
-              <div className="text-right">
-                <h2 className="text-secondary text-lg leading-none font-orbitron">CORTEX</h2>
-                <div className="flex gap-1 mt-1 justify-end">
-                  {Array.from({ length: gameState.magentaCaptures }).map((_, i) => (
-                    <div key={i} className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#00f3ff]" />
-                  ))}
-                </div>
-              </div>
-              <div className="h-10 w-10 border-2 border-secondary bg-secondary/10 rounded-full flex items-center justify-center text-secondary font-bold shadow-[0_0_15px_rgba(255,0,255,0.3)]">
-                AI
+        <div className="flex items-center gap-12 pointer-events-auto bg-black/40 backdrop-blur-md px-8 py-4 border border-white/10 rounded-full shadow-[0_0_30px_rgba(0,243,255,0.1)]">
+          {/* Player Score & Identity */}
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 border-2 border-primary bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+              P1
+            </div>
+            <div className="text-left">
+              <h2 className="text-primary text-base leading-none font-orbitron">{playerName}</h2>
+              <div className="flex gap-1 mt-1">
+                {Array.from({ length: gameState.cyanCaptures }).map((_, i) => (
+                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_8px_#ff00ff]" />
+                ))}
               </div>
             </div>
-            <CyberButton 
-              onClick={handleExit} 
-              variant="secondary" 
-              className="mt-1 opacity-50 hover:opacity-100 transition-opacity"
-            >
-              <LogOut className="w-3 h-3 mr-2" /> ABORT
-            </CyberButton>
+            <div className="text-2xl font-black text-primary font-orbitron ml-2">
+              {gameState.cyanCaptures}
+            </div>
+          </div>
+
+          <div className="h-8 w-px bg-white/20" />
+
+          {/* AI Score & Identity */}
+          <div className="flex items-center gap-4">
+            <div className="text-2xl font-black text-secondary font-orbitron mr-2">
+              {gameState.magentaCaptures}
+            </div>
+            <div className="text-right">
+              <h2 className="text-secondary text-base leading-none font-orbitron">CORTEX</h2>
+              <div className="flex gap-1 mt-1 justify-end">
+                {Array.from({ length: gameState.magentaCaptures }).map((_, i) => (
+                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_#00f3ff]" />
+                ))}
+              </div>
+            </div>
+            <div className="h-10 w-10 border-2 border-secondary bg-secondary/10 rounded-full flex items-center justify-center text-secondary font-bold shadow-[0_0_15px_rgba(255,0,255,0.3)]">
+              AI
+            </div>
           </div>
         </div>
       </header>
+
+      <div className="flex flex-row items-center justify-center w-full max-w-7xl gap-8 px-4 z-10 pt-24">
+        {/* ... existing code for panels and board ... */}
+        {/* Replacing only the middle part to keep the refactored panels if they exist */}
+      </div>
+
+      {/* Fixed Bottom Controls */}
+      <footer className="fixed bottom-6 left-0 right-0 flex justify-center z-30 pointer-events-none">
+        <div className="pointer-events-auto">
+          <CyberButton 
+            onClick={handleExit} 
+            variant="secondary" 
+            className="opacity-70 hover:opacity-100 transition-opacity px-8"
+          >
+            <LogOut className="w-4 h-4 mr-2" /> ABORT MISSION
+          </CyberButton>
+        </div>
+      </footer>
 
       <div className="flex flex-row items-center justify-center w-full max-w-7xl gap-8 px-4 z-10">
         {/* Left Score Side Panel */}
