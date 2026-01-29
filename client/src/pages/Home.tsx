@@ -27,7 +27,7 @@ export default function Home() {
         transition={{ duration: 0.8 }}
         className="glass-panel max-w-lg w-full p-8 md:p-12 relative z-10 border-t border-primary/50"
       >
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 overflow-hidden">
           <motion.div 
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
@@ -36,7 +36,7 @@ export default function Home() {
           >
             <Gamepad2 className="w-12 h-12 text-primary" />
           </motion.div>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black neon-text mb-2 tracking-tighter whitespace-nowrap px-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black neon-text mb-2 tracking-tighter break-words px-2 max-w-full">
             NEO<span className="text-white">CHECKERS</span>
           </h1>
           <p className="text-muted-foreground font-mono uppercase tracking-widest text-sm">
