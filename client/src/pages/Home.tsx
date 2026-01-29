@@ -36,7 +36,7 @@ export default function Home() {
           >
             <Gamepad2 className="w-12 h-12 text-primary" />
           </motion.div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black neon-text mb-2 tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis px-2">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black neon-text mb-2 tracking-tighter whitespace-nowrap px-2">
             NEO<span className="text-white">CHECKERS</span>
           </h1>
           <p className="text-muted-foreground font-mono uppercase tracking-widest text-sm">
