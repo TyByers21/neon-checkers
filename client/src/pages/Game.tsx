@@ -99,7 +99,7 @@ export default function Game() {
       </header>
 
       {/* Main Board Area */}
-      <main className="relative z-10 mt-16 md:mt-0">
+      <main className="relative z-10 w-full max-w-6xl px-4 mt-8 md:mt-0 flex-1 flex flex-col justify-center">
         <Board 
           gameState={gameState} 
           onSelect={selectPiece} 

@@ -186,9 +186,9 @@ export function Board({ gameState, onSelect, onMove }: BoardProps) {
   };
 
   return (
-    <div className="w-full h-[60vh] md:h-[70vh] rounded-xl overflow-hidden border-2 border-primary/20 bg-black/40 backdrop-blur-sm relative">
-      <Canvas shadows dpr={[1, 2]}>
-        <PerspectiveCamera makeDefault position={[0, 6, 6]} fov={50} />
+    <div className="w-full aspect-[16/9] md:aspect-[21/9] min-h-[500px] rounded-xl overflow-hidden border-2 border-primary/20 bg-black/40 backdrop-blur-sm relative shadow-[0_0_50px_rgba(0,243,255,0.1)]">
+      <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 5, 8], fov: 45 }}>
+        <PerspectiveCamera makeDefault position={[0, 5, 8]} fov={45} />
         <OrbitControls 
           enablePan={false} 
           maxPolarAngle={Math.PI / 2.1} 
