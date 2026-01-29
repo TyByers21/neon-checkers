@@ -1,4 +1,5 @@
-import { api, type InsertGame } from "@shared/routes";
+import { api } from "@shared/routes";
+import { type InsertGame } from "@shared/schema";
 
 const STORAGE_KEY = "cyber_checkers_history";
 
