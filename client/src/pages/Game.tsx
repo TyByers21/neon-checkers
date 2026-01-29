@@ -53,9 +53,19 @@ export default function Game() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-background">
       {/* HUD Header */}
       <header className="fixed top-0 left-0 right-0 p-4 md:p-6 flex flex-col items-center z-30 pointer-events-none">
+        {/* Top Right Abort Button */}
+        <div className="absolute top-4 right-4 md:top-6 md:right-6 pointer-events-auto">
+          <CyberButton 
+            onClick={handleExit} 
+            variant="secondary" 
+            className="opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <LogOut className="w-4 h-4 mr-2" /> ABORT
+          </CyberButton>
+        </div>
+
         <div className="text-center mb-4 pointer-events-none">
           <h1 className="text-xl md:text-3xl font-black neon-text tracking-widest font-orbitron opacity-80">
             NEO<span className="text-white">CHECKERS</span>
@@ -108,17 +118,8 @@ export default function Game() {
         {/* Replacing only the middle part to keep the refactored panels if they exist */}
       </div>
 
-      {/* Fixed Bottom Controls */}
+      {/* Fixed Bottom Controls - REMOVED ABORT FROM HERE */}
       <footer className="fixed bottom-6 left-0 right-0 flex justify-center z-30 pointer-events-none">
-        <div className="pointer-events-auto">
-          <CyberButton 
-            onClick={handleExit} 
-            variant="secondary" 
-            className="opacity-70 hover:opacity-100 transition-opacity px-8"
-          >
-            <LogOut className="w-4 h-4 mr-2" /> ABORT MISSION
-          </CyberButton>
-        </div>
       </footer>
 
       <div className="flex flex-row items-center justify-center w-full max-w-7xl gap-8 px-4 z-10">
