@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, Text, Float, Trail } from "@react-three/drei";
 import * as THREE from "three";
@@ -32,8 +32,18 @@ function Piece({
 }) {
   const meshRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Mesh>(null);
-  const currentPos = useRef(new THREE.Vector3());
+  
+  // Initialize currentPos to the actual starting coordinate to prevent teleportation
+  const initialPos = useMemo(() => new THREE.Vector3(
+    (c - (BOARD_SIZE - 1) / 2) * TILE_SIZE,
+    PIECE_HEIGHT / 2,
+    (r - (BOARD_SIZE - 1) / 2) * TILE_SIZE
+  ), []); // Only initialize once on mount
+  
+  const currentPos = useRef(initialPos.clone());
   const velocity = useRef(new THREE.Vector3());
+  const [isJumpAnimating, setIsJumpAnimating] = useState(false);
+  const lastRC = useRef({ r, c });
   
   const targetPos = useMemo(() => [
     (c - (BOARD_SIZE - 1) / 2) * TILE_SIZE,
@@ -41,9 +51,18 @@ function Piece({
     (r - (BOARD_SIZE - 1) / 2) * TILE_SIZE
   ], [r, c]);
 
+  // Detect move to trigger jump animation
+  useEffect(() => {
+    if (lastRC.current.r !== r || lastRC.current.c !== c) {
+      setIsJumpAnimating(true);
+      setTimeout(() => setIsJumpAnimating(false), 500); // 500ms jump duration
+      lastRC.current = { r, c };
+    }
+  }, [r, c]);
+
   useFrame((state, delta) => {
     if (meshRef.current) {
-      // Smooth movement using spring-like physics instead of simple lerp
+      // Smooth movement using spring-like physics
       const targetVec = new THREE.Vector3(...targetPos);
       const force = new THREE.Vector3().subVectors(targetVec, currentPos.current).multiplyScalar(15);
       velocity.current.add(force.multiplyScalar(delta)).multiplyScalar(0.85);
@@ -51,19 +70,28 @@ function Piece({
       
       meshRef.current.position.copy(currentPos.current);
       
-      // Idle animation: Subtle hovering/floating
-      const hover = Math.sin(state.clock.elapsedTime * 2) * 0.05;
-      meshRef.current.position.y += hover + (isSelected ? 0.3 : 0);
+      // Vertical Jump Arc Animation
+      if (isJumpAnimating) {
+        // Parabolic arc for jump: y = height * (1 - (2t-1)^2)
+        // We use state.clock to calculate a progress 't' for the 500ms jump
+        const t = (state.clock.elapsedTime % 0.5) / 0.5;
+        const jumpHeight = 0.8;
+        const jumpY = jumpHeight * (1 - Math.pow(2 * t - 1, 2));
+        meshRef.current.position.y += jumpY;
+      } else {
+        // Idle animation: Subtle hovering/floating
+        const hover = Math.sin(state.clock.elapsedTime * 2) * 0.05;
+        meshRef.current.position.y += hover + (isSelected ? 0.3 : 0);
+      }
 
-      // Electrical current idle animation: Pulsing emissive and visual arcs
+      // Electrical current idle animation
       if (glowRef.current) {
         const pulse = (Math.sin(state.clock.elapsedTime * 15) + 1) / 2;
-        const arc = (Math.sin(state.clock.elapsedTime * 40) + 1) / 2 * 0.3; // High frequency arc flicker
+        const arc = (Math.sin(state.clock.elapsedTime * 40) + 1) / 2 * 0.3;
         (glowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.3 + pulse * 0.5 + arc;
         glowRef.current.scale.setScalar(1 + arc * 0.2);
       }
       
-      // Rotate slowly for extra dynamism
       meshRef.current.rotation.y += delta * 0.5;
     }
   });
