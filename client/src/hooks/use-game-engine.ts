@@ -69,12 +69,14 @@ function evaluateBoard(board: BoardState): number {
   return score;
 }
 
-function getValidMoves(board: BoardState, player: PieceColor): Move[] {
+function getValidMoves(board: BoardState, player: PieceColor, fromPos?: Position): Move[] {
   const moves: Move[] = [];
   const jumps: Move[] = [];
 
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
+      if (fromPos && (fromPos.r !== r || fromPos.c !== c)) continue;
+      
       const p = board[r][c];
       if (!p || p.color !== player) continue;
 
@@ -88,12 +90,12 @@ function getValidMoves(board: BoardState, player: PieceColor): Move[] {
           const nc = c + dc;
 
           if (isValidPos(nr, nc)) {
-            // Simple Move
-            if (!board[nr][nc]) {
+            // Simple Move - Only allowed if not currently in a multi-jump sequence
+            if (!board[nr][nc] && !fromPos) {
               moves.push({ from: { r, c }, to: { r: nr, c: nc } });
             } 
             // Jump
-            else if (board[nr][nc]?.color !== player) {
+            else if (board[nr][nc] && board[nr][nc]?.color !== player) {
               const jr = nr + dr;
               const jc = nc + dc;
               if (isValidPos(jr, jc) && !board[jr][jc]) {
@@ -105,12 +107,13 @@ function getValidMoves(board: BoardState, player: PieceColor): Move[] {
       }
     }
   }
-  return jumps.length > 0 ? jumps : moves; // Forced capture rule
+  return jumps.length > 0 ? jumps : moves;
 }
 
-function applyMove(board: BoardState, move: Move): BoardState {
+function applyMove(board: BoardState, move: Move): { board: BoardState, promoted: boolean } {
   const newBoard = board.map(row => row.map(p => p ? { ...p } : null));
   const piece = newBoard[move.from.r][move.from.c]!;
+  let promoted = false;
   
   newBoard[move.to.r][move.to.c] = piece;
   newBoard[move.from.r][move.from.c] = null;
@@ -120,10 +123,18 @@ function applyMove(board: BoardState, move: Move): BoardState {
   }
 
   // King Promotion
-  if (piece.color === "cyan" && move.to.r === 0) piece.isKing = true;
-  if (piece.color === "magenta" && move.to.r === BOARD_SIZE - 1) piece.isKing = true;
+  if (!piece.isKing) {
+    if (piece.color === "cyan" && move.to.r === 0) {
+      piece.isKing = true;
+      promoted = true;
+    }
+    if (piece.color === "magenta" && move.to.r === BOARD_SIZE - 1) {
+      piece.isKing = true;
+      promoted = true;
+    }
+  }
 
-  return newBoard;
+  return { board: newBoard, promoted };
 }
 
 function minimax(board: BoardState, depth: number, maximizing: boolean, alpha: number, beta: number): { score: number, move?: Move } {
@@ -142,8 +153,26 @@ function minimax(board: BoardState, depth: number, maximizing: boolean, alpha: n
   if (maximizing) {
     let maxEval = -Infinity;
     for (const move of moves) {
-      const newBoard = applyMove(board, move);
-      const evalScore = minimax(newBoard, depth - 1, false, alpha, beta).score;
+      let { board: nextBoard, promoted } = applyMove(board, move);
+      
+      // Handle multi-jump AI logic
+      if (move.jump && !promoted) {
+        let currentBoard = nextBoard;
+        let jumpPossible = true;
+        while (jumpPossible) {
+          const nextJumps = getValidMoves(currentBoard, playerColor, move.to);
+          if (nextJumps.length > 0) {
+            const res = applyMove(currentBoard, nextJumps[0]);
+            currentBoard = res.board;
+            if (res.promoted) jumpPossible = false;
+          } else {
+            jumpPossible = false;
+          }
+        }
+        nextBoard = currentBoard;
+      }
+
+      const evalScore = minimax(nextBoard, depth - 1, false, alpha, beta).score;
       if (evalScore > maxEval) {
         maxEval = evalScore;
         bestMove = move;
@@ -155,8 +184,26 @@ function minimax(board: BoardState, depth: number, maximizing: boolean, alpha: n
   } else {
     let minEval = Infinity;
     for (const move of moves) {
-      const newBoard = applyMove(board, move);
-      const evalScore = minimax(newBoard, depth - 1, true, alpha, beta).score;
+      let { board: nextBoard, promoted } = applyMove(board, move);
+      
+      // Handle multi-jump AI logic
+      if (move.jump && !promoted) {
+        let currentBoard = nextBoard;
+        let jumpPossible = true;
+        while (jumpPossible) {
+          const nextJumps = getValidMoves(currentBoard, playerColor, move.to);
+          if (nextJumps.length > 0) {
+            const res = applyMove(currentBoard, nextJumps[0]);
+            currentBoard = res.board;
+            if (res.promoted) jumpPossible = false;
+          } else {
+            jumpPossible = false;
+          }
+        }
+        nextBoard = currentBoard;
+      }
+
+      const evalScore = minimax(nextBoard, depth - 1, true, alpha, beta).score;
       if (evalScore < minEval) {
         minEval = evalScore;
         bestMove = move;
@@ -181,32 +228,23 @@ export function useGameEngine(difficulty: "easy" | "medium" | "hard") {
     movesCount: 0,
   });
 
-  // Calculate valid moves for current turn immediately
-  useEffect(() => {
-    if (gameState.winner) return;
-    
-    const currentColor = gameState.turn === "player" ? "cyan" : "magenta";
-    // Only calculate if we haven't already selected something (unless it's start of turn)
-    // Actually, simple approach: always know all valid moves for the board
-  }, [gameState.turn, gameState.board]);
-
+  const [multiJumpPos, setMultiJumpPos] = useState<Position | null>(null);
 
   const selectPiece = (r: number, c: number) => {
     if (gameState.turn !== "player" || gameState.winner) return;
 
+    // If in multi-jump, can only select the jump piece
+    if (multiJumpPos && (multiJumpPos.r !== r || multiJumpPos.c !== c)) return;
+
     const piece = gameState.board[r][c];
     if (!piece || piece.color !== "cyan") {
-      setGameState(prev => ({ ...prev, selectedPos: null }));
+      if (!multiJumpPos) setGameState(prev => ({ ...prev, selectedPos: null }));
       return;
     }
 
-    // Get ALL valid moves for player to check forced captures
-    const allMoves = getValidMoves(gameState.board, "cyan");
-    // Filter for just this piece
+    const allMoves = getValidMoves(gameState.board, "cyan", multiJumpPos || undefined);
     const movesForPiece = allMoves.filter(m => m.from.r === r && m.from.c === c);
 
-    // If forced captures exist globally, and this piece isn't one of them, disallow selection if rule implies strictness
-    // For simplicity here: only show moves if this piece CAN move legally
     if (movesForPiece.length > 0) {
       setGameState(prev => ({
         ...prev,
@@ -217,25 +255,40 @@ export function useGameEngine(difficulty: "easy" | "medium" | "hard") {
 
   const makeMove = useCallback((move: Move) => {
     setGameState(prev => {
-      const newBoard = applyMove(prev.board, move);
+      const { board: newBoard, promoted } = applyMove(prev.board, move);
       const captured = !!move.jump;
       
-      // Update scores
       const newCyanCaptures = prev.cyanCaptures + (prev.turn === "player" && captured ? 1 : 0);
       const newMagentaCaptures = prev.magentaCaptures + (prev.turn === "ai" && captured ? 1 : 0);
 
-      // Check win condition
-      const nextPlayer = prev.turn === "player" ? "magenta" : "cyan";
-      const nextMoves = getValidMoves(newBoard, nextPlayer);
+      // Check for multi-jump
+      if (captured && !promoted) {
+        const nextJumps = getValidMoves(newBoard, prev.turn === "player" ? "cyan" : "magenta", move.to);
+        if (nextJumps.length > 0) {
+          setMultiJumpPos(move.to);
+          return {
+            ...prev,
+            board: newBoard,
+            cyanCaptures: newCyanCaptures,
+            magentaCaptures: newMagentaCaptures,
+            selectedPos: prev.turn === "player" ? move.to : null,
+            movesCount: prev.movesCount + 1,
+          };
+        }
+      }
+
+      setMultiJumpPos(null);
+      const nextTurn = prev.turn === "player" ? "ai" : "player";
+      const nextMoves = getValidMoves(newBoard, nextTurn === "player" ? "cyan" : "magenta");
       let winner = prev.winner;
       
       if (nextMoves.length === 0) {
-        winner = prev.turn; // Current player wins if opponent has no moves
+        winner = prev.turn;
       }
 
       return {
         board: newBoard,
-        turn: prev.turn === "player" ? "ai" : "player",
+        turn: nextTurn,
         winner,
         selectedPos: null,
         validMoves: [],
