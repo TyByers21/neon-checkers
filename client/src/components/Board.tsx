@@ -16,6 +16,9 @@ const BOARD_SIZE = 8;
 const PIECE_RADIUS = 0.35;
 const PIECE_HEIGHT = 0.15;
 
+// ------------------------
+// PIECE COMPONENT
+// ------------------------
 function Piece({ 
   r, 
   c, 
@@ -34,13 +37,12 @@ function Piece({
   const meshRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   
-  // Initialize currentPos to the actual starting coordinate to prevent teleportation
   const initialPos = useMemo(() => new THREE.Vector3(
     (c - (BOARD_SIZE - 1) / 2) * TILE_SIZE,
     PIECE_HEIGHT / 2,
     (r - (BOARD_SIZE - 1) / 2) * TILE_SIZE
-  ), []); // Only initialize once on mount
-  
+  ), []);
+
   const currentPos = useRef(initialPos.clone());
   const velocity = useRef(new THREE.Vector3());
   const [isJumpAnimating, setIsJumpAnimating] = useState(false);
@@ -52,49 +54,40 @@ function Piece({
     (r - (BOARD_SIZE - 1) / 2) * TILE_SIZE
   ], [r, c]);
 
-  // Detect move to trigger jump animation
   useEffect(() => {
     if (lastRC.current.r !== r || lastRC.current.c !== c) {
       setIsJumpAnimating(true);
-      setTimeout(() => setIsJumpAnimating(false), 500); // 500ms jump duration
+      setTimeout(() => setIsJumpAnimating(false), 500);
       lastRC.current = { r, c };
     }
   }, [r, c]);
 
   useFrame((state, delta) => {
-    if (meshRef.current) {
-      // Smooth movement using spring-like physics
-      const targetVec = new THREE.Vector3(...targetPos);
-      const force = new THREE.Vector3().subVectors(targetVec, currentPos.current).multiplyScalar(15);
-      velocity.current.add(force.multiplyScalar(delta)).multiplyScalar(0.85);
-      currentPos.current.add(velocity.current.clone().multiplyScalar(delta));
-      
-      meshRef.current.position.copy(currentPos.current);
-      
-      // Vertical Jump Arc Animation
-      if (isJumpAnimating) {
-        // Parabolic arc for jump: y = height * (1 - (2t-1)^2)
-        // We use state.clock to calculate a progress 't' for the 500ms jump
-        const t = (state.clock.elapsedTime % 0.5) / 0.5;
-        const jumpHeight = 0.8;
-        const jumpY = jumpHeight * (1 - Math.pow(2 * t - 1, 2));
-        meshRef.current.position.y += jumpY;
-      } else {
-        // Idle animation: Subtle hovering/floating
-        const hover = Math.sin(state.clock.elapsedTime * 2) * 0.05;
-        meshRef.current.position.y += hover + (isSelected ? 0.3 : 0);
-      }
+    if (!meshRef.current) return;
 
-      // Electrical current idle animation
-      if (glowRef.current) {
-        const pulse = (Math.sin(state.clock.elapsedTime * 15) + 1) / 2;
-        const arc = (Math.sin(state.clock.elapsedTime * 40) + 1) / 2 * 0.3;
-        (glowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.3 + pulse * 0.5 + arc;
-        glowRef.current.scale.setScalar(1 + arc * 0.2);
-      }
-      
-      meshRef.current.rotation.y += delta * 0.5;
+    const targetVec = new THREE.Vector3(...targetPos);
+    const force = new THREE.Vector3().subVectors(targetVec, currentPos.current).multiplyScalar(15);
+    velocity.current.add(force.multiplyScalar(delta)).multiplyScalar(0.85);
+    currentPos.current.add(velocity.current.clone().multiplyScalar(delta));
+    meshRef.current.position.copy(currentPos.current);
+
+    if (isJumpAnimating) {
+      const t = (state.clock.elapsedTime % 0.5) / 0.5;
+      const jumpHeight = 0.8;
+      meshRef.current.position.y += jumpHeight * (1 - Math.pow(2 * t - 1, 2));
+    } else {
+      const hover = Math.sin(state.clock.elapsedTime * 2) * 0.05;
+      meshRef.current.position.y += hover + (isSelected ? 0.3 : 0);
     }
+
+    if (glowRef.current) {
+      const pulse = (Math.sin(state.clock.elapsedTime * 15) + 1) / 2;
+      const arc = (Math.sin(state.clock.elapsedTime * 40) + 1) / 2 * 0.3;
+      (glowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.3 + pulse * 0.5 + arc;
+      glowRef.current.scale.setScalar(1 + arc * 0.2);
+    }
+
+    meshRef.current.rotation.y += delta * 0.5;
   });
 
   const glowColor = color === "cyan" ? "#00f3ff" : "#ff00ff";
@@ -112,26 +105,21 @@ function Piece({
           metalness={0.9}
         />
       </mesh>
-      
+
       {/* Movement Trail */}
-      <Trail
-        width={1.5}
-        length={4}
-        color={glowColor}
-        attenuation={(t) => t * t}
-      >
+      <Trail width={1.5} length={4} color={glowColor} attenuation={(t) => t * t}>
         <mesh visible={false}>
           <sphereGeometry args={[0.1]} />
         </mesh>
       </Trail>
 
-      {/* Electrical Current Arcs (Outer Ring) */}
+      {/* Electrical Current Arcs */}
       <mesh ref={glowRef} position={[0, PIECE_HEIGHT / 2 + 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[PIECE_RADIUS * 0.7, PIECE_RADIUS * 0.9, 32]} />
         <meshBasicMaterial color={glowColor} transparent opacity={0.6} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Internal Electrical Core */}
+      {/* Internal Core */}
       <mesh position={[0, 0, 0]}>
         <cylinderGeometry args={[PIECE_RADIUS * 0.5, PIECE_RADIUS * 0.5, PIECE_HEIGHT * 1.1, 16]} />
         <meshBasicMaterial color={glowColor} transparent opacity={0.1} />
@@ -152,19 +140,10 @@ function Piece({
   );
 }
 
-function Tile({ 
-  r, 
-  c, 
-  isDark, 
-  isValidTarget, 
-  onClick 
-}: { 
-  r: number; 
-  c: number; 
-  isDark: boolean; 
-  isValidTarget: boolean; 
-  onClick: () => void;
-}) {
+// ------------------------
+// TILE COMPONENT
+// ------------------------
+function Tile({ r, c, isDark, isValidTarget, onClick }: { r: number; c: number; isDark: boolean; isValidTarget: boolean; onClick: () => void }) {
   const x = (c - (BOARD_SIZE - 1) / 2) * TILE_SIZE;
   const z = (r - (BOARD_SIZE - 1) / 2) * TILE_SIZE;
 
@@ -172,13 +151,9 @@ function Tile({
     <group position={[x, 0, z]} onClick={(e) => { e.stopPropagation(); onClick(); }}>
       <mesh receiveShadow>
         <boxGeometry args={[TILE_SIZE, 0.1, TILE_SIZE]} />
-        <meshStandardMaterial 
-          color={isDark ? "#050505" : "#111111"} 
-          roughness={0.1}
-          metalness={0.9}
-        />
+        <meshStandardMaterial color={isDark ? "#050505" : "#111111"} roughness={0.1} metalness={0.9} />
       </mesh>
-      
+
       {/* Grid Border */}
       <mesh position={[0, 0.051, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[TILE_SIZE * 0.95, TILE_SIZE * 0.95]} />
@@ -192,7 +167,7 @@ function Tile({
           <meshBasicMaterial color="#4ade80" />
         </mesh>
       )}
-      
+
       {/* Highlight Target Tile */}
       {isValidTarget && (
         <mesh position={[0, 0.052, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -204,34 +179,52 @@ function Tile({
   );
 }
 
+// ------------------------
+// ENVIRONMENT EXPOSURE
+// ------------------------
 function EnvironmentExposure({ exposure }: { exposure: number }) {
   const { gl } = useThree();
+  useEffect(() => { gl.toneMappingExposure = exposure; }, [exposure, gl]);
+  return null;
+}
 
-  useEffect(() => {
-    gl.toneMappingExposure = exposure;
-  }, [exposure, gl]);
+// ------------------------
+// CINEMATIC CAMERA INTRO
+// ------------------------
+function CinematicCameraIntro({ initialPos, targetPos, duration = 3 }: { initialPos: THREE.Vector3; targetPos: THREE.Vector3; duration?: number }) {
+  const { camera } = useThree();
+  const clock = useRef(0);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => { camera.position.copy(initialPos); }, [camera, initialPos]);
+
+  useFrame((state, delta) => {
+    if (done) return; // stop updating after intro
+
+    clock.current += delta;
+    const t = Math.min(clock.current / duration, 1);
+    camera.position.lerpVectors(initialPos, targetPos, t);
+    camera.lookAt(0, 0, 0);
+
+    if (t >= 1) setDone(true); // release control
+  });
 
   return null;
 }
 
-
+// ------------------------
+// MAIN BOARD COMPONENT
+// ------------------------
 export function Board({ gameState, onSelect, onMove }: BoardProps) {
   const { board, selectedPos, turn } = gameState;
 
   const [environment, setEnvironment] = useState("neon");
 
-  const environmentMap: Record<
-    string,
-    { type: "preset" | "file"; value: string; exposure: number }
-  > = {
+  const environmentMap: Record<string, { type: "preset" | "file"; value: string; exposure: number }> = {
     neon: { type: "file", value: "/hdr/neon_studio.hdr", exposure: 1.4 },
     blue: { type: "file", value: "/hdr/blue_studio.hdr", exposure: 1.2 },
     brown: { type: "file", value: "/hdr/brown_studio.hdr", exposure: 1.1 },
-    victorian: {
-      type: "file",
-      value: "/hdr/victorian_library.hdr",
-      exposure: 1.0,
-    },
+    victorian: { type: "file", value: "/hdr/victorian_library.hdr", exposure: 1.0 },
     sunset: { type: "preset", value: "sunset", exposure: 1.3 },
   };
 
@@ -256,18 +249,8 @@ export function Board({ gameState, onSelect, onMove }: BoardProps) {
           } else if (board[nr][nc]?.color !== piece.color) {
             const jr = nr + dr;
             const jc = nc + dc;
-            if (
-              jr >= 0 &&
-              jr < 8 &&
-              jc >= 0 &&
-              jc < 8 &&
-              !board[jr][jc]
-            ) {
-              jumps.push({
-                from: pos,
-                to: { r: jr, c: jc },
-                jump: { r: nr, c: nc },
-              });
+            if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && !board[jr][jc]) {
+              jumps.push({ from: pos, to: { r: jr, c: jc }, jump: { r: nr, c: nc } });
             }
           }
         }
@@ -276,70 +259,40 @@ export function Board({ gameState, onSelect, onMove }: BoardProps) {
     return jumps.length > 0 ? jumps : moves;
   }
 
-  const movesForSelected = useMemo(
-    () =>
-      selectedPos
-        ? getValidMovesForPiece(board, selectedPos)
-        : [],
-    [board, selectedPos]
-  );
+  const movesForSelected = useMemo(() => selectedPos ? getValidMovesForPiece(board, selectedPos) : [], [board, selectedPos]);
 
   const handleAction = (r: number, c: number) => {
-    const move = movesForSelected.find(
-      (m) => m.to.r === r && m.to.c === c
-    );
-    if (move) {
-      onMove(move);
-    } else {
-      onSelect(r, c);
-    }
+    const move = movesForSelected.find((m) => m.to.r === r && m.to.c === c);
+    if (move) onMove(move);
+    else onSelect(r, c);
   };
+
+  // Camera positions for cinematic intro
+  const cameraStart = useMemo(() => new THREE.Vector3(0, 15, 20), []);
+  const cameraTarget = useMemo(() => new THREE.Vector3(0, 5, 8), []);
 
   return (
     <div className="w-full aspect-[16/9] md:aspect-[21/9] min-h-[500px] rounded-xl overflow-hidden border-2 border-primary/20 bg-black/40 backdrop-blur-sm relative shadow-[0_0_50px_rgba(0,243,255,0.1)]">
 
-      {/* ENVIRONMENT SELECTOR */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
-        {Object.keys(environmentMap).map((env) => (
-          <button
-            key={env}
-            onClick={() => setEnvironment(env)}
-            className={`px-3 py-1 text-xs font-mono rounded-md border transition-all
-              ${
-                environment === env
-                  ? "bg-primary text-black border-primary"
-                  : "bg-black/50 text-white border-white/20 hover:border-primary"
-              }`}
-          >
-            {env.toUpperCase()}
-          </button>
-        ))}
+      {/* HDR Dropdown */}
+      <div className="absolute top-4 right-4 z-10">
+        <select value={environment} onChange={(e) => setEnvironment(e.target.value)} className="px-3 py-1 text-xs font-mono rounded-md bg-black/50 text-white border-white/20">
+          {Object.keys(environmentMap).map((env) => (
+            <option key={env} value={env}>{env.toUpperCase()}</option>
+          ))}
+        </select>
       </div>
 
-      <Canvas
-        shadows
-        dpr={[1, 2]}
-        camera={{ position: [0, 5, 8], fov: 45 }}
-      >
+      <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 5, 8], fov: 45 }}>
         <PerspectiveCamera makeDefault position={[0, 5, 8]} fov={45} />
-        <OrbitControls
-          enablePan={false}
-          maxPolarAngle={Math.PI / 2.1}
-          minDistance={4}
-          maxDistance={12}
-        />
+
+        <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 2.1} minDistance={4} maxDistance={12} />
 
         <ambientLight intensity={0.4} />
         <pointLight position={[10, 10, 10]} intensity={1.2} castShadow />
-        <spotLight
-          position={[-10, 10, -10]}
-          angle={0.2}
-          penumbra={1}
-          intensity={1}
-          castShadow
-        />
+        <spotLight position={[-10, 10, -10]} angle={0.2} penumbra={1} intensity={1} castShadow />
 
-        {/* HDR ENVIRONMENT */}
+        {/* HDR Environment */}
         <Environment
           key={environment}
           {...(environmentMap[environment].type === "preset"
@@ -350,6 +303,9 @@ export function Board({ gameState, onSelect, onMove }: BoardProps) {
 
         {/* Tone Exposure Control */}
         <EnvironmentExposure exposure={environmentMap[environment].exposure} />
+
+        {/* Cinematic Camera Intro */}
+        <CinematicCameraIntro initialPos={cameraStart} targetPos={cameraTarget} duration={3} />
 
         <group>
           <mesh receiveShadow position={[0, -0.1, 0]}>
@@ -364,9 +320,7 @@ export function Board({ gameState, onSelect, onMove }: BoardProps) {
                 r={r}
                 c={c}
                 isDark={(r + c) % 2 === 1}
-                isValidTarget={movesForSelected.some(
-                  (m) => m.to.r === r && m.to.c === c
-                )}
+                isValidTarget={movesForSelected.some((m) => m.to.r === r && m.to.c === c)}
                 onClick={() => handleAction(r, c)}
               />
             ))
@@ -382,9 +336,7 @@ export function Board({ gameState, onSelect, onMove }: BoardProps) {
                     c={c}
                     color={piece.color as "cyan" | "magenta"}
                     isKing={piece.isKing}
-                    isSelected={
-                      selectedPos?.r === r && selectedPos?.c === c
-                    }
+                    isSelected={selectedPos?.r === r && selectedPos?.c === c}
                     onClick={() => handleAction(r, c)}
                   />
                 )
@@ -392,13 +344,7 @@ export function Board({ gameState, onSelect, onMove }: BoardProps) {
           )}
         </group>
 
-        <ContactShadows
-          position={[0, -0.05, 0]}
-          opacity={0.4}
-          scale={10}
-          blur={2.5}
-          far={1}
-        />
+        <ContactShadows position={[0, -0.05, 0]} opacity={0.4} scale={10} blur={2.5} far={1} />
       </Canvas>
 
       <div className="absolute bottom-4 left-4 text-[10px] font-mono text-primary uppercase opacity-40">
